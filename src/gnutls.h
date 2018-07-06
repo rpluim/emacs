@@ -22,6 +22,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #ifdef HAVE_GNUTLS
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
+#include <gnutls/x509-ext.h>
 
 #if 0x030000 <= GNUTLS_VERSION_NUMBER
 # define HAVE_GNUTLS3
