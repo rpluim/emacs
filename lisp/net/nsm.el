@@ -117,24 +117,27 @@ unencrypted."
             (nsm-save-host host port status 'fingerprint nil 'always))
           process))))))
 
- (defcustom nsm-tls-checks
-  '((nsm-tls-check-verify-cert            . low)
-    (nsm-tls-check-same-cert              . medium)
-    (nsm-tls-check-version                . medium)
-    (nsm-tls-check-compression            . medium)
-    (nsm-tls-check-renegotiation-info-ext . medium)
-    (nsm-tls-check-null-suite             . medium)
-    (nsm-tls-check-cbc-cipher             . high)
-    (nsm-tls-check-ecdsa-cbc-cipher       . medium)
-    (nsm-tls-check-3des-cipher            . medium)
-    (nsm-tls-check-rc4-cipher             . medium)
-    (nsm-tls-check-sha1-sig               . medium)
-    (nsm-tls-check-md5-sig                . medium)
-    (nsm-tls-check-rsa-kx                 . high)
+(defcustom nsm-tls-checks
+  '(;; Pre-Snowden Known Weaknesses
+    (nsm-tls-check-version                . low)
+    (nsm-tls-check-compression            . low)
+    (nsm-tls-check-renegotiation-info-ext . low)
+    (nsm-tls-check-verify-cert            . low)
+    (nsm-tls-check-same-cert              . low)
+    (nsm-tls-check-null-suite             . low)
+    (nsm-tls-check-export-kx              . low)
+    (nsm-tls-check-anon-kx                . low)
+    (nsm-tls-check-md5-sig                . low)
+    (nsm-tls-check-rc4-cipher             . low)
+    ;; Post-Snowden Apocolyse
     (nsm-tls-check-dhe-prime-kx           . medium)
+    (nsm-tls-check-sha1-sig               . medium)
+    (nsm-tls-check-ecdsa-cbc-cipher       . medium)
+    ;; Towards TLS 1.3
     (nsm-tls-check-dhe-kx                 . high)
-    (nsm-tls-check-export-kx              . medium)
-    (nsm-tls-check-anon-kx                . medium))
+    (nsm-tls-check-rsa-kx                 . high)
+    (nsm-tls-check-3des-cipher            . high)
+    (nsm-tls-check-cbc-cipher             . high))
   "This variable specifies what TLS connection checks to perform.
 It's an alist where the key is the name of the check, and the
 value is the minimum security level the check should begin.
