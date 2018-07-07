@@ -152,6 +152,8 @@ DEF_DLL_FN (int, gnutls_x509_crt_check_hostname,
 DEF_DLL_FN (int, gnutls_x509_crt_check_issuer,
               (gnutls_x509_crt_t, gnutls_x509_crt_t));
 DEF_DLL_FN (void, gnutls_x509_crt_deinit, (gnutls_x509_crt_t));
+DEF_DLL_DN (int, gnutls_x509_crt_export,
+            (gnutls_x509_crt_t, gnutls_x509_crt_fmt_t, void *, size_t *));
 DEF_DLL_FN (int, gnutls_x509_crt_import,
 	    (gnutls_x509_crt_t, const gnutls_datum_t *,
 	     gnutls_x509_crt_fmt_t));
@@ -173,6 +175,9 @@ DEF_DLL_FN (int, gnutls_x509_crt_get_dn,
 	    (gnutls_x509_crt_t, char *, size_t *));
 DEF_DLL_FN (int, gnutls_x509_crt_get_pk_algorithm,
 	    (gnutls_x509_crt_t, unsigned int *));
+DEF_DLL_FN (int, gnutls_x509_crt_print,
+            (gnutls_x509_crt_t, gnutls_certificate_print_formats_t,
+             gnutls_datum_t *));
 DEF_DLL_FN (const char *, gnutls_pk_algorithm_get_name,
 	    (gnutls_pk_algorithm_t));
 DEF_DLL_FN (int, gnutls_pk_bits_to_sec_param,
@@ -317,6 +322,7 @@ init_gnutls_functions (void)
   LOAD_DLL_FN (library, gnutls_x509_crt_check_hostname);
   LOAD_DLL_FN (library, gnutls_x509_crt_check_issuer);
   LOAD_DLL_FN (library, gnutls_x509_crt_deinit);
+  LOAD_DLL_FN (library, gnutls_x509_crt_export);
   LOAD_DLL_FN (library, gnutls_x509_crt_import);
   LOAD_DLL_FN (library, gnutls_x509_crt_init);
   LOAD_DLL_FN (library, gnutls_x509_crt_get_fingerprint);
@@ -327,6 +333,7 @@ init_gnutls_functions (void)
   LOAD_DLL_FN (library, gnutls_x509_crt_get_expiration_time);
   LOAD_DLL_FN (library, gnutls_x509_crt_get_dn);
   LOAD_DLL_FN (library, gnutls_x509_crt_get_pk_algorithm);
+  LOAD_DLL_FN (library, gnutls_x509_crt_print)
   LOAD_DLL_FN (library, gnutls_pk_algorithm_get_name);
   LOAD_DLL_FN (library, gnutls_pk_bits_to_sec_param);
   LOAD_DLL_FN (library, gnutls_x509_crt_get_issuer_unique_id);
@@ -455,6 +462,7 @@ init_gnutls_functions (void)
 #  define gnutls_x509_crt_check_hostname fn_gnutls_x509_crt_check_hostname
 #  define gnutls_x509_crt_check_issuer fn_gnutls_x509_crt_check_issuer
 #  define gnutls_x509_crt_deinit fn_gnutls_x509_crt_deinit
+#  define gnutls_x509_crt_export fn_gnutls_x509_crt_export
 #  define gnutls_x509_crt_get_activation_time fn_gnutls_x509_crt_get_activation_time
 #  define gnutls_x509_crt_get_dn fn_gnutls_x509_crt_get_dn
 #  define gnutls_x509_crt_get_expiration_time fn_gnutls_x509_crt_get_expiration_time
@@ -463,6 +471,7 @@ init_gnutls_functions (void)
 #  define gnutls_x509_crt_get_issuer_unique_id fn_gnutls_x509_crt_get_issuer_unique_id
 #  define gnutls_x509_crt_get_key_id fn_gnutls_x509_crt_get_key_id
 #  define gnutls_x509_crt_get_pk_algorithm fn_gnutls_x509_crt_get_pk_algorithm
+#  define gnutls_x509_crt_print fn_gnutls_x509_crt_print
 #  define gnutls_x509_crt_get_serial fn_gnutls_x509_crt_get_serial
 #  define gnutls_x509_crt_get_signature_algorithm fn_gnutls_x509_crt_get_signature_algorithm
 #  define gnutls_x509_crt_get_subject_unique_id fn_gnutls_x509_crt_get_subject_unique_id
