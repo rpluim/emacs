@@ -58,6 +58,10 @@ checked and warned against."
                  (const :tag "Medium" medium)
                  (const :tag "High" high)))
 
+;; Backward compatibility
+(when (eq network-security-level 'paranoid)
+  (setq network-security-level 'high))
+
 (defcustom nsm-settings-file (expand-file-name "network-security.data"
                                                user-emacs-directory)
   "The file the security manager settings will be stored in."
