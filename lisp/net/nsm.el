@@ -246,8 +246,8 @@ See also: `nsm-tls-checks' and `nsm-noninteractive'"
   "Check for warnings from the certificate verification status.
 
 This is the most basic security check for a TLS connection.  If
- certificate verification has warning, it means the server's
- identity cannot be verified by the credentials received.
+ certificate verification fails, it means the server's identity
+ cannot be verified by the credentials received.
 
 Think very carefully before removing this check from
 `nsm-tls-checks'."
@@ -306,13 +306,13 @@ allows an attacker with sufficient resource, and positioned
 between the user and the server, to downgrade vulnerable TLS
 connections to insecure 512-bit export grade crypotography.
 
-The Logjam paper suggests using 1024-bit prime in the client to
+The Logjam paper suggests using 1024-bit prime on the client to
 mitigate some effects of this attack, and upgrade to 2048-bit as
 soon as server configurations allow.  According to SSLLabs' SSL
 Pulse tracker, only about 75% of server support 2048-bit key
 exchange in June 2018[2].  To provide a balance between
-compatibility and security, this function only requires a minimum
-key strength of 1024-bit.
+compatibility and security, this function only checks for a
+minimum key strength of 1024-bit.
 
 See also: `nsm-tls-check-dhe-kx'
 
@@ -489,7 +489,7 @@ Current Use and Deprecation of TDEA\",
 (defun nsm-tls-check-rc4-cipher (host port status &optional settings)
   "Check for RC4 ciphers.
 
-RC4 cipher has been prohibited by RFC 74651[1].
+RC4 cipher has been prohibited by RFC 7465[1].
 
 Since GnuTLS 3.4.0, RC4 is not enabled by default[2], but can be
 enabled if requested.  This check is mainly provided to secure
@@ -579,7 +579,18 @@ the MD5 Message-Digest and the HMAC-MD5 Algorithms\",
 ;; Extension checks
 
 (defun nsm-tls-check-renegotiation-info-ext (host port status &optional settings)
-  "Check for renegotiation_info TLS extension status."
+  "Check for renegotiation_info TLS extension status.
+
+If this TLS extension is not used, the connection established is
+vulnerable to an attack in which an impersonator can extract
+sensitive information such as HTTP session ID cookies or login
+passwords.
+
+Reference:
+
+E. Rescorla, M. Ray, S. Dispensa, N. Oskov (Feb 2010).  \"Transport
+Layer Security (TLS) Renegotiation Indication Extension\",
+`https://tools.ietf.org/html/rfc5746'"
   (let ((unsafe-renegotiation (not (plist-get status :safe-renegotiation))))
     (and unsafe-renegotiation
          (format-message
@@ -590,9 +601,9 @@ the MD5 Message-Digest and the HMAC-MD5 Algorithms\",
 (defun nsm-tls-check-compression (host port status &optional settings)
   "Check for TLS compression.
 
-TLS compression attacks such as CRIME and BREACH would allow an
-attacker to decrypt ciphertext.  As a result, RFC 7525 has
-recommended its disablement.
+TLS compression attacks such as CRIME would allow an attacker to
+decrypt ciphertext.  As a result, RFC 7525 has recommended its
+disablement.
 
 Reference:
 
@@ -610,7 +621,7 @@ Security (DTLS)\", `https://tools.ietf.org/html/rfc7525'"
 (defun nsm-tls-check-version (host port status &optional settings)
   "Check for SSL/TLS protocol version.
 
-This function guard against usage of SSL3.0, which has been
+This function guards against the usage of SSL3.0, which has been
 deprecated by RFC7568[1], and TLS 1.0, which has been deprecated
 by PCI DSS[2].
 
@@ -636,9 +647,10 @@ Early TLS\"
   "Check for NULL cipher suites.
 
 This function checks for NULL key exchange, cipher and message
-authentication code key derivation function.  As the name suggests, a
-NULL assigned for any of the above disables an integral part of the
-security properties that make up the TLS protocol."
+authentication code key derivation function.  As the name
+suggests, a NULL assigned for any of the above disables an
+integral part of the security properties that makes up the TLS
+protocol."
   (let ((suite (nsm-cipher-suite status)))
     (and (string-match "\\bNULL\\b" suite)
          (format-message
