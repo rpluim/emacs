@@ -101,25 +101,23 @@ to keep track of the TLS status of STARTTLS servers.
 
 If WARN-UNENCRYPTED, query the user if the connection is
 unencrypted."
-  (if (eq network-security-level 'low)
-      process
-    (let* ((status (gnutls-peer-status process))
-           (id (nsm-id host port))
-           (settings (nsm-host-settings id)))
-      (cond
-       ((not (process-live-p process))
-        nil)
-       ((not status)
-        ;; This is a non-TLS connection.
-        (nsm-check-plain-connection process host port settings
-                                    warn-unencrypted))
-       (t
-        (let ((process
-               (nsm-check-tls-connection process host port status settings)))
-          (when (and process save-fingerprint
-                     (null (nsm-host-settings id)))
-            (nsm-save-host host port status 'fingerprint nil 'always))
-          process))))))
+  (let* ((status (gnutls-peer-status process))
+         (id (nsm-id host port))
+         (settings (nsm-host-settings id)))
+    (cond
+     ((not (process-live-p process))
+      nil)
+     ((not status)
+      ;; This is a non-TLS connection.
+      (nsm-check-plain-connection process host port settings
+                                  warn-unencrypted))
+     (t
+      (let ((process
+             (nsm-check-tls-connection process host port status settings)))
+        (when (and process save-fingerprint
+                   (null (nsm-host-settings id)))
+          (nsm-save-host host port status 'fingerprint nil 'always))
+        process)))))
 
 (defcustom nsm-tls-checks
   '(;; Pre-Snowden Known Weaknesses
