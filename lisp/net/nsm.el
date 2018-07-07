@@ -129,7 +129,7 @@ unencrypted."
     (nsm-tls-check-anon-kx                . low)
     (nsm-tls-check-md5-sig                . low)
     (nsm-tls-check-rc4-cipher             . low)
-    ;; Post-Snowden Apocolyse
+    ;; Post-Snowden Apocalypse
     (nsm-tls-check-dhe-prime-kx           . medium)
     (nsm-tls-check-sha1-sig               . medium)
     (nsm-tls-check-ecdsa-cbc-cipher       . medium)
