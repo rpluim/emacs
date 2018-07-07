@@ -45,10 +45,10 @@ connection should be handled.
 
 The following values are possible:
 
-`low': Absolutely no checks are performed.
-`medium': This is the default level, should be reasonable for most usage.
-`high': This warns about additional things that many people would
-not find useful.
+`low': Check for problems known before Edward Snowden.
+`medium': Default. Suitable for most circumstances.
+`high': Warns about additional issues deemed too straight under most
+circumstances.
 
 See the Emacs manual for a description of all things that are
 checked and warned against."
