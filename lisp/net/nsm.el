@@ -786,12 +786,7 @@ protocol."
     (let ((response
 	   (condition-case nil
                (intern
-                (car (split-string
-                      (nsm-query-user message
-                                      (string-join
-                                       (cl-loop for cert in (plist-get status :certificates)
-                                                collect (gnutls-format-certificate (plist-get cert :pem)))
-                                       "\n"))))
+                (car (split-string (nsm-query-user message status)))
                 obarray)
 	     ;; Make sure we manage to close the process if the user hits
 	     ;; `C-g'.
@@ -811,13 +806,15 @@ protocol."
 (set-advertised-calling-convention
  'nsm-query '(host port status what problems message) "27.1")
 
-(defun nsm-query-user (message cert)
-  (let ((buffer (get-buffer-create "*Network Security Manager*")))
+(defun nsm-query-user (message status)
+  (let ((buffer (get-buffer-create "*Network Security Manager*"))
+        (certs (plist-get status :certificates)))
     (save-window-excursion
       ;; First format the certificate and warnings.
       (with-help-window buffer
         (with-current-buffer buffer
           (erase-buffer)
+          (insert (nsm-format-certificate status))
           (insert message)
           (goto-char (point-min))
           ;; Fill the first line of the message, which usually
@@ -825,28 +822,65 @@ protocol."
           (fill-region (point) (line-end-position))))
       ;; Then ask the user what to do about it.
       (unwind-protect
-          (let ((show-details nil)
-                (answer nil)
-                (cert-window nil))
-            (while (string= "details"
-                            (setq answer
-                                  (cadr
-                                   (read-multiple-choice
-                                    "Continue connecting?"
-                                    '((?a "always" "Accept this certificate this session and for all future sessions.")
-                                      (?s "session only" "Accept this certificate this session only.")
-                                      (?n "no" "Refuse to use this certificate, and close the connection.")
-                                      (?d "details" "See certificate details"))))))
-              (when (and show-details
-                         (windowp cert-window)
-                         (window-live-p cert-window))
-                (quit-window 'kill cert-window))
-              (when (setq show-details (not show-details))
-                (setq cert-window (display-message-or-buffer cert))))
-            answer)
+          (let* ((accept-choices '((?a "always" "Accept this certificate this session and for all future sessions.")
+                                   (?s "session only" "Accept this certificate this session only.")
+                                   (?n "no" "Refuse to use this certificate, and close the connection.")
+                                   (?d "details" "See certificate details")))
+                 (details-choices '((?b "backward page" "See previous page")
+                                    (?f "forward page" "See next page")
+                                    (?n "next" "Next certificate")
+                                    (?p "previous" "Previous certificate")
+                                    (?q "quit" "Quit details view")))
+                 (answer (read-multiple-choice "Continue connecting?" accept-choices))
+                 (show-details (char-equal (car answer) ?d))
+                 (pems (cl-loop for cert in certs
+                                collect (gnutls-format-certificate (plist-get cert :pem))))
+                 (cert-index 0)
+                 (cert-window nil))
+            (while show-details
+              (when (not (window-valid-p cert-window))
+                (setq cert-window
+                      (with-current-buffer (get-buffer-create "*Certificate Details*")
+                        (insert (nth cert-index pems))
+                        (goto-char (point-min))
+                        (display-message-or-buffer (nth cert-index pems) "*Certificate Details*"))))
+              (setq answer (read-multiple-choice "Viewing certificate:" details-choices))
+
+              (cond
+               ((char-equal (car answer) ?q)
+                (setq show-details (not show-details))
+                (kill-buffer (window-buffer cert-window))
+                (delete-window cert-window)
+                (setq answer (read-multiple-choice "Continue connecting?" accept-choices))
+                (setq show-details (char-equal (car answer) ?d)))
+
+               ((char-equal (car answer) ?b)
+                (with-selected-window cert-window
+                  (with-current-buffer (window-buffer cert-window)
+                    (ignore-errors (scroll-down)))))
+
+               ((char-equal (car answer) ?f)
+                (with-selected-window cert-window
+                  (with-current-buffer (window-buffer cert-window)
+                    (ignore-errors (scroll-up)))))
+
+               ((char-equal (car answer) ?n)
+                (with-current-buffer (window-buffer cert-window)
+                  (erase-buffer)
+                  (setq cert-index (mod (1+ cert-index) (length pems)))
+                  (insert (nth cert-index pems))
+                  (goto-char (point-min))))
+
+               ((char-equal (car answer) ?p)
+                (with-current-buffer (window-buffer cert-window)
+                  (erase-buffer)
+                  (setq cert-index (mod (1- cert-index) (length pems)))
+                  (insert (nth cert-index pems))
+                  (goto-char (point-min))))))
+            (cadr answer))
         (kill-buffer buffer)))))
 
-(set-advertised-calling-convention 'nsm-query-user '(message cert) "27.1")
+(set-advertised-calling-convention 'nsm-query-user '(message status) "27.1")
 
 (defun nsm-save-host (host port status what problems permanency)
   (let* ((id (nsm-id host port))
@@ -972,8 +1006,13 @@ protocol."
                    (plist-get status :compression))
 	  (insert
 	   "Protocol:" (plist-get status :protocol)
+           ", safe renegotiation: " (if (plist-get status :safe-renegotiation) "YES" "NO")
 	   ", compression: " (plist-get status :compression)
+	   ", encrypt-then-MAC: " (if (plist-get status :encrypt-then-mac) "YES" "NO")
 	   ", key: " (plist-get status :key-exchange)
+           (if (string-match "^\\bDHE\\b" (plist-get status :key-exchange))
+               (concat ", prime bits: " (format "%s" (plist-get status :diffie-hellman-prime-bits)))
+             "")
 	   ", cipher: " (plist-get status :cipher)
 	   ", mac: " (plist-get status :mac) "\n"))
 	(when (plist-get cert :certificate-security-level)
