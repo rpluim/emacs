@@ -207,11 +207,10 @@ values the results of the checks.")
 (defun nsm-should-check (host)
   "Determines whether NSM should check for TLS problems for HOST.
 
-If `nsm-trust-local-network' returns non-nil, and if the host
-address is a localhost address, a machine address, a direct link
-or a private network address, this function returns nil. Non-nil
-otherwise.
-"
+If `nsm-trust-local-network' is or returns non-nil, and if the
+host address is a localhost address, a machine address, a direct
+link or a private network address, this function returns
+nil. Non-nil otherwise."
   (let* ((address (or (nslookup-host-ipv4 host nil 'vector)
                       (nslookup-host-ipv6 host nil 'vector)))
          (ipv4? (eq (length address) 4)))
