@@ -205,24 +205,47 @@ RESULTS is an alist where the keys are the checks run and the
 values the results of the checks.")
 
 (defun nsm-should-check (host)
-  (let ((address (url-gateway-nslookup-host host)))
+  (let* ((address (or (nslookup-host-ipv4 host nil 'vector)
+                      (nslookup-host-ipv6 host nil 'vector)))
+         (ipv4? (eq (length address) 4)))
     (not
-     (or (string-prefix-p "0." address)  ;; this machine
-         (string-prefix-p "127." address) ;; localhost
-         ;; TODO: deal with :: and ::1
+     (or (if ipv4?
+             (or
+              ;; (0.x.x.x) this machine
+              (eq (aref address 0) 0)
+              ;; (127.x.x.x) localhost
+              (eq (aref address 0) 0))
+           (or
+            ;; (::) IPv6 this machine
+            (not (cl-mismatch address [0 0 0 0 0 0 0 0]))
+            ;; (::1) IPv6 localhost
+            (not (cl-mismatch address [0 0 0 0 0 0 0 1]))))
          (and (or (and (functionp nsm-trust-local-network)
                        (funcall nsm-trust-local-network))
                   nsm-trust-local-network)
-              (cl-loop for prefix in '(
-                                       "10."      ;; private
-                                       "169.254." ;; link-local
-                                       "172.16."  ;; private
-                                       "192.168." ;; private
-                                       "198.18."  ;; private
-                                       "fc"       ;; IPv6 unique local address
-                                       "fd"       ;; IPv6 unique local address
-                                       )
-                       thereis (string-prefix-p prefix (downcase address))))))))
+              (if ipv4?
+                  (or
+                   ;; (10.x.x.x) private
+                   (eq (aref address 0) 10)
+                   ;; (172.16.x.x) private
+                   (and (eq (aref address 0) 172)
+                        (eq (aref address 0) 16))
+                   ;; (192.168.x.x) private
+                   (and (eq (aref address 0) 192)
+                        (eq (aref address 0) 168))
+                   ;; (198.18.x.x) private
+                   (and (eq (aref address 0) 198)
+                        (eq (aref address 0) 18))
+                   ;; (169.254.x.x) link-local
+                   (and (eq (aref address 0) 169)
+                        (eq (aref address 0) 254)))
+                (memq (aref address 0)
+                      '(
+                        64512  ;; (fc00::) IPv6 unique local address
+                        64768  ;; (fd00::) IPv6 unique local address
+                        65152  ;; (fe80::) IPv6 link-local
+                        )
+                      )))))))
 
 (defun nsm-check-tls-connection (process host port status settings)
   "Check TLS connection against potential security problems.
