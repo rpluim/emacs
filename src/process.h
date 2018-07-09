@@ -200,6 +200,7 @@ struct Lisp_Process
     unsigned int gnutls_extra_peer_verification;
     int gnutls_log_level;
     int gnutls_handshakes_tried;
+    int gnutls_handshake_err;
     bool_bf gnutls_p : 1;
     bool_bf gnutls_complete_negotiation_p : 1;
 #endif

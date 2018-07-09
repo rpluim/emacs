@@ -1289,6 +1289,9 @@ DEFUN ("gnutls-peer-status-warning-describe", Fgnutls_peer_status_warning_descri
   if (EQ (status_symbol, intern (":invalid-ocsp-status")))
     return build_string ("the received OCSP certificate status is invalid");
 
+  if (EQ (status_symbol, intern (":dh-prime-unacceptable")))
+    return build_string (emacs_gnutls_strerror (GNUTLS_CERT_INVALID));
+
   return Qnil;
 }
 
@@ -1305,7 +1308,8 @@ The return value is a property list with top-level keys :warnings and
 
   CHECK_PROCESS (proc);
 
-  if (GNUTLS_INITSTAGE (proc) != GNUTLS_STAGE_READY)
+  if (GNUTLS_INITSTAGE (proc) != GNUTLS_STAGE_READY &&
+      XPROCESS (proc)->gnutls_handshake_err != GNUTLS_E_DH_PRIME_UNACCEPTABLE)
     return Qnil;
 
   /* Then collect any warnings already computed by the handshake. */
@@ -1588,13 +1592,16 @@ gnutls_verify_boot (Lisp_Object proc, Lisp_Object proplist)
      check of the certificate's hostname with
      gnutls_x509_crt_check_hostname against :hostname.  */
 
+  if (XPROCESS (proc)->gnutls_handshake_err == GNUTLS_E_DH_PRIME_UNACCEPTABLE)
+    warnings = list1 (intern (":dh-prime-unacceptable"));
+
   ret = gnutls_certificate_verify_peers2 (state, &peer_verification);
   if (ret < GNUTLS_E_SUCCESS)
     return gnutls_make_error (ret);
 
   p->gnutls_peer_verification = peer_verification;
 
-  warnings = Fplist_get (Fgnutls_peer_status (proc), intern (":warnings"));
+  warnings = nconc2 (warnings, Fplist_get (Fgnutls_peer_status (proc), intern (":warnings")));
   if (!NILP (warnings))
     {
       for (Lisp_Object tail = warnings; CONSP (tail); tail = XCDR (tail))
@@ -1695,7 +1702,7 @@ gnutls_verify_boot (Lisp_Object proc, Lisp_Object proplist)
     }
 
   /* Set this flag only if the whole initialization succeeded.  */
-  p->gnutls_p = true;
+  p->gnutls_p = !(XPROCESS (proc)->gnutls_handshake_err == GNUTLS_E_DH_PRIME_UNACCEPTABLE);
 
   return gnutls_make_error (ret);
 }
@@ -2035,7 +2042,8 @@ one trustfile (usually a CA bundle).  */)
     !NILP (Fplist_get (proplist, QCcomplete_negotiation));
   GNUTLS_INITSTAGE (proc) = GNUTLS_STAGE_CRED_SET;
   ret = emacs_gnutls_handshake (XPROCESS (proc));
-  if (ret < GNUTLS_E_SUCCESS)
+  XPROCESS (proc)->gnutls_handshake_err = ret;
+  if (ret < GNUTLS_E_SUCCESS && ret != GNUTLS_E_DH_PRIME_UNACCEPTABLE)
     return gnutls_make_error (ret);
 
   return gnutls_verify_boot (proc, proplist);

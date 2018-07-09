@@ -396,6 +396,7 @@ Diffie-Hellman Fails in Practice\", `https://weakdh.org/'
 `https://www.ssllabs.com/ssl-pulse/'"
   (let ((prime-bits (plist-get status :diffie-hellman-prime-bits)))
     (if (and (string-match "^\\bDHE\\b" (plist-get status :key-exchange))
+             prime-bits
              (< prime-bits 1024))
         (format-message
          "Diffie-Hellman key strength (%s bits) too weak (%s bits)"
