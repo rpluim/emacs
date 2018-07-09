@@ -1350,11 +1350,13 @@ The return value is a property list with top-level keys :warnings and
   if (verification & GNUTLS_CERT_PURPOSE_MISMATCH)
     warnings = Fcons (intern (":purpose-mismatch"), warnings);
 
+#   if GNUTLS_VERSION_NUMBER >= 0x030501
   if (verification & GNUTLS_CERT_MISSING_OCSP_STATUS)
     warnings = Fcons (intern (":missing-ocsp-status"), warnings);
 
   if (verification & GNUTLS_CERT_INVALID_OCSP_STATUS)
     warnings = Fcons (intern (":invalid-ocsp-status"), warnings);
+#   endif
 #  endif
 # endif
 #endif
